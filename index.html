@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Survey Data</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f7f7f7;
+  }
+  h2 { margin-bottom: 10px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  th { background: #eee; }
+</style>
+</head>
+<body>
+  <h2>📋 Latest Survey Responses</h2>
+  <div id="output">Loading data...</div>
+
+  <script>
+    const SHEET_ID = "YOUR_SPREADSHEET_ID_HERE";  // <-- replace this
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ/gviz/tq?tqx=out:json`;
+
+    async function loadSheet() {
+      try {
+        const res = await fetch(SHEET_URL);
+        const text = await res.text();
+
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const cols = json.table.cols.map(c => c.label);
+        const rows = json.table.rows.map(r => r.c.map(c => (c ? c.v : "")));
+
+        let html = "<table><thead><tr>" +
+          cols.map(h => `<th>${h}</th>`).join("") +
+          "</tr></thead><tbody>";
+
+        rows.forEach(row => {
+          html += "<tr>" + row.map(v => `<td>${v}</td>`).join("") + "</tr>";
+        });
+
+        html += "</tbody></table>";
+        document.getElementById("output").innerHTML = html;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("output").innerHTML =
+          `<p style="color:red;">Error loading data. Check console.</p>`;
+      }
+    }
+
+    loadSheet();
+  </script>
+</body>
+</html>
