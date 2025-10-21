@@ -98,35 +98,38 @@ let RAW_ROWS = []; // internal data store (array of objects)
 
 function parseImagesField(fieldValue) {
   if (!fieldValue) return [];
-  const parts = fieldValue.split(/\s+|,|;/).map(s => s.trim()).filter(Boolean);
+
+  // Split on space, comma, or semicolon
+  const parts = fieldValue
+    .split(/\s+|,|;/)
+    .map(s => s.trim())
+    .filter(Boolean);
 
   const images = parts.map(p => {
-    // Normalize Google Drive links
+    // --- Normalize Google Drive links ---
+    // Handles /open?id=XXXX
+    const openMatch = p.match(/open\?id=([a-zA-Z0-9_-]{10,})/);
+    // Handles /file/d/XXXX/
     const driveMatch = p.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    // Handles ?id=XXXX
     const idMatch = p.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-    if (driveMatch)
-      return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
-    if (idMatch)
-      return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
 
-    // Handle Googleusercontent direct serving links (already usable)
-    if (p.includes("googleusercontent.com"))
-      return p;
+    const id = openMatch?.[1] || driveMatch?.[1] || idMatch?.[1];
+    if (id) {
+      return `https://drive.google.com/uc?export=view&id=${id}`;
+    }
 
-    // Ensure it starts with https://
-    if (!/^https?:\/\//i.test(p)) return null;
+    // Handle direct googleusercontent links
+    if (p.includes("googleusercontent.com")) return p;
 
-    // Try to detect .jpg, .jpeg, .png links directly
-    if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(p))
-      return p;
+    // Handle direct image links (.jpg/.png etc.)
+    if (/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(p)) return p;
 
-    // Fallback: return null if unknown
-    return null;
+    return null; // Unknown pattern
   }).filter(Boolean);
 
   return images;
 }
-
 
 function formatStars(n){
   const count = Math.max(0, Math.min(5, parseInt(n) || 0));
@@ -194,7 +197,6 @@ function buildCardHTML(item, idx){
   // footer with hidden timestamp (but accessible for sorting)
   html += `<div class="footer">
              <div class="timestamp">${isNaN(new Date(tsRaw)) ? "" : new Date(tsRaw).toLocaleString()}</div>
-             <div style="font-size:0.85rem;color:var(--muted)">ID:${idx+1}</div>
            </div>`;
 
   html += `</article>`;
