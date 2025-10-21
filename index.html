@@ -54,9 +54,11 @@
 <body>
 
 <header>
-  <h1>📦 Product Requests</h1>
+  <h1>📦Buy List</h1>
 
   <div class="controls">
+    <input type="search" id="searchInput" placeholder="Search product..." style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;width:160px">
+    
     <label>
       Sort:
       <select id="sortSelect" title="Sort by timestamp">
@@ -64,6 +66,20 @@
         <option value="old">Oldest first</option>
       </select>
     </label>
+    <label>
+      Location:
+      <select id="filterLocation">
+        <option value="">All</option>
+      </select>
+    </label>
+    
+    <label>
+      Shop:
+      <select id="filterShop">
+        <option value="">All</option>
+      </select>
+    </label>
+
 
     <button id="refreshBtn">Refresh</button>
   </div>
@@ -80,33 +96,37 @@ const REFRESH_INTERVAL_MS = 60000; // auto-refresh every 60s (change or set to 0
 
 let RAW_ROWS = []; // internal data store (array of objects)
 
-function parseGoogleGviz(text){
-  // Google returns: google.visualization.Query.setResponse(...);
-  const json = JSON.parse(text.substr(47).slice(0, -2));
-  return json;
-}
-
-function parseImagesField(fieldValue){
-  if(!fieldValue) return [];
-  // split by whitespace or comma or semicolon
+function parseImagesField(fieldValue) {
+  if (!fieldValue) return [];
   const parts = fieldValue.split(/\s+|,|;/).map(s => s.trim()).filter(Boolean);
-  // Keep only likely URLs or Drive file IDs; convert Drive links to direct view link
+
   const images = parts.map(p => {
-    // If looks like a Google Drive link, convert
-    // patterns: https://drive.google.com/file/d/FILEID/view?usp=..., https://drive.google.com/open?id=FILEID, or plain FILEID
+    // Normalize Google Drive links
     const driveMatch = p.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
     const idMatch = p.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-    if (driveMatch) return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
-    if (idMatch) return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
-    // if plain URL:
-    if (/^https?:\/\//i.test(p)) return p;
-    // if looks like a raw drive file id (length 20+ chars), attempt convert
-    if (/^[a-zA-Z0-9_-]{20,}$/.test(p)) return `https://drive.google.com/uc?export=view&id=${p}`;
-    // otherwise it's probably a filename — skip it
+    if (driveMatch)
+      return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+    if (idMatch)
+      return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
+
+    // Handle Googleusercontent direct serving links (already usable)
+    if (p.includes("googleusercontent.com"))
+      return p;
+
+    // Ensure it starts with https://
+    if (!/^https?:\/\//i.test(p)) return null;
+
+    // Try to detect .jpg, .jpeg, .png links directly
+    if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(p))
+      return p;
+
+    // Fallback: return null if unknown
     return null;
   }).filter(Boolean);
+
   return images;
 }
+
 
 function formatStars(n){
   const count = Math.max(0, Math.min(5, parseInt(n) || 0));
@@ -123,7 +143,7 @@ function buildCardHTML(item, idx){
   const need = item["Need"] || ""; // numeric rating
   const notes = item["Notes"] || "";
   const price = item["price"] || "";
-  const tsRaw = item["TimeStamp"] || item["Timestamp"] || item["Time"] || "";
+  const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["Time"] || "";
   const images = parseImagesField(item["picture"] || item["picture "] || item["Picture"] || "");
 
   // header of card
@@ -173,17 +193,53 @@ function buildCardHTML(item, idx){
 
   // footer with hidden timestamp (but accessible for sorting)
   html += `<div class="footer">
-             <div class="timestamp">${tsRaw ? new Date(tsRaw).toLocaleString() : ""}</div>
+             <div class="timestamp">${isNaN(new Date(tsRaw)) ? "" : new Date(tsRaw).toLocaleString()}</div>
              <div style="font-size:0.85rem;color:var(--muted)">ID:${idx+1}</div>
            </div>`;
 
   html += `</article>`;
   return html;
 }
+  
+function populateFilters(rows) {
+  const locSet = new Set();
+  const shopSet = new Set();
+
+  rows.forEach(r => {
+    if (r["Location"]) r["Location"].split(/,|;/).forEach(v => locSet.add(v.trim()));
+    if (r["Shop"]) r["Shop"].split(/,|;/).forEach(v => shopSet.add(v.trim()));
+  });
+
+  const locSelect = document.getElementById("filterLocation");
+  const shopSelect = document.getElementById("filterShop");
+
+  // Fill Location filter
+  if (locSelect) {
+    locSelect.innerHTML = '<option value="">All</option>' +
+      Array.from(locSet).sort().map(v => `<option>${v}</option>`).join("");
+  }
+
+  // Fill Shop filter
+  if (shopSelect) {
+    shopSelect.innerHTML = '<option value="">All</option>' +
+      Array.from(shopSet).sort().map(v => `<option>${v}</option>`).join("");
+  }
+}
 
 function escapeHtml(str){
   if(!str && str !== 0) return "";
   return String(str).replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+}
+function parseGoogleGviz(txt) {
+  // Remove leading JS callback wrapper used by Google's gviz output
+  const jsonStr = txt
+    .substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.error("Failed to parse GViz JSON", e);
+    return { table: { cols: [], rows: [] } };
+  }
 }
 
 async function fetchAndRender(){
@@ -202,6 +258,7 @@ async function fetchAndRender(){
 
     RAW_ROWS = rows; // store raw
     renderCards(rows);
+    populateFilters(rows);
   } catch(err){
     console.error(err);
     out.innerHTML = `<p style="color:red">Failed to load sheet. Open console for details.</p>`;
@@ -210,37 +267,56 @@ async function fetchAndRender(){
 
 function renderCards(rows){
   const out = document.getElementById("output");
-  // sort according to select
   const sortSel = document.getElementById("sortSelect");
   const order = sortSel?.value || "new";
-  rows.sort((a,b)=>{
-    const ta = parseDateForSort(a["TimeStamp"] || a["Timestamp"]);
-    const tb = parseDateForSort(b["TimeStamp"] || b["Timestamp"]);
+  const locSel = document.getElementById("filterLocation")?.value || "";
+  const shopSel = document.getElementById("filterShop")?.value || "";
+
+  // Step 1: filter
+  const searchValue = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
+
+  let filtered = rows.filter(r => {
+    const loc = (r["Location"] || "").toLowerCase();
+    const shop = (r["Shop"] || "").toLowerCase();
+    const product = (r["Product"] || "").toLowerCase();
+
+    const locMatch = !locSel || loc.includes(locSel.toLowerCase());
+    const shopMatch = !shopSel || shop.includes(shopSel.toLowerCase());
+    const searchMatch = !searchValue || product.includes(searchValue);
+
+    return locMatch && shopMatch && searchMatch;
+  });
+
+
+  // Step 2: sort the filtered array
+  filtered.sort((a, b) => {
+    const ta = parseDateForSort(a["timestamp"] || a["TimeStamp"] || a["Timestamp"]);
+    const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"]);
     return order === "new" ? tb - ta : ta - tb;
   });
 
-  if(rows.length === 0){
-    out.innerHTML = "<p>No requests found.</p>";
+  // Step 3: render
+  if (filtered.length === 0) {
+    out.innerHTML = "<p>No matching requests found.</p>";
     return;
   }
 
   let html = `<div class="card-grid">`;
-  rows.forEach((r,i)=> html += buildCardHTML(r,i));
+  filtered.forEach((r, i) => html += buildCardHTML(r, i));
   html += `</div>`;
   out.innerHTML = html;
 
-  // attach carousel handlers
-  document.querySelectorAll(".card .prev, .card .next").forEach(btn=>{
-    btn.addEventListener("click", ev=>{
+  // Step 4: attach carousel button handlers
+  document.querySelectorAll(".card .prev, .card .next").forEach(btn => {
+    btn.addEventListener("click", ev => {
       const card = ev.target.closest(".card");
       const img = card.querySelector(".media img");
-      if(!img) return;
+      if (!img) return;
       let images = JSON.parse(img.getAttribute("data-images") || "[]");
-      if(images.length < 2) return;
-      // find index:
+      if (images.length < 2) return;
       let idx = images.indexOf(img.src);
-      if(idx === -1) idx = 0;
-      if(ev.target.classList.contains("prev")){
+      if (idx === -1) idx = 0;
+      if (ev.target.classList.contains("prev")) {
         idx = (idx - 1 + images.length) % images.length;
       } else {
         idx = (idx + 1) % images.length;
@@ -250,17 +326,29 @@ function renderCards(rows){
   });
 }
 
-function parseDateForSort(s){
-  if(!s) return 0;
-  const d = new Date(s);
-  if(!isNaN(d.getTime())) return d.getTime();
-  // attempt parse common formats if needed
-  const alt = Date.parse(s);
-  return isNaN(alt) ? 0 : alt;
+function parseDateForSort(s) {
+  if (!s) return 0;
+  // Try native Date()
+  let d = new Date(s);
+  if (!isNaN(d)) return d.getTime();
+
+  // Try known patterns (Google Form style "2025/10/20 17:43:00")
+  const match = s.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    const [, y, m, d_, hh, mm, ss] = match.map(Number);
+    return new Date(y, m - 1, d_, hh, mm, ss || 0).getTime();
+  }
+  return 0;
 }
+
 
 document.getElementById("sortSelect")?.addEventListener("change", ()=> renderCards(RAW_ROWS));
 document.getElementById("refreshBtn")?.addEventListener("click", ()=> fetchAndRender());
+["filterLocation", "filterShop"].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", () => renderCards(RAW_ROWS));
+});
+document.getElementById("searchInput")?.addEventListener("input", () => renderCards(RAW_ROWS));
+
 
 // initial load
 fetchAndRender();
