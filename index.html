@@ -96,39 +96,18 @@ const REFRESH_INTERVAL_MS = 60000; // auto-refresh every 60s (change or set to 0
 
 let RAW_ROWS = []; // internal data store (array of objects)
 
-function parseImagesField(fieldValue) {
-  if (!fieldValue) return [];
-
-  // Split on space, comma, or semicolon
-  const parts = fieldValue
-    .split(/\s+|,|;/)
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  const images = parts.map(p => {
-    // --- Normalize Google Drive links ---
-    // Handles /open?id=XXXX
-    const openMatch = p.match(/open\?id=([a-zA-Z0-9_-]{10,})/);
-    // Handles /file/d/XXXX/
-    const driveMatch = p.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-    // Handles ?id=XXXX
-    const idMatch = p.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-
-    const id = openMatch?.[1] || driveMatch?.[1] || idMatch?.[1];
-    if (id) {
-      return `https://drive.google.com/uc?export=view&id=${id}`;
-    }
-
-    // Handle direct googleusercontent links
-    if (p.includes("googleusercontent.com")) return p;
-
-    // Handle direct image links (.jpg/.png etc.)
-    if (/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(p)) return p;
-
-    return null; // Unknown pattern
-  }).filter(Boolean);
-
-  return images;
+function parseImagesField(field) {
+  if (!field) return [];
+  return field
+    .split(/\s+/) // split by spaces
+    .map(link => {
+      const match = link.match(/(?:id=|\/d\/)([-\w]{10,})/);
+      if (match) {
+        const id = match[1];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+      }
+      return link;
+    });
 }
 
 function formatStars(n){
