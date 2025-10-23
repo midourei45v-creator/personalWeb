@@ -35,20 +35,27 @@
   border-radius: 8px;
 }
 
-.card:hover .card-image {
-  transform: scale(1.08);
+.media {
+  width: 100%;
+  height: 170px;
+  background: #eee;
+  position: relative;
+  overflow: hidden; /* important so zoom stays inside card */
 }
 
-  .media{
-    width:100%;
-    height:170px;
-    background:#eee;
-    position:relative;
-  }
-  .media img{width:100%;height:100%;object-fit:cover;display:block}
-  .carousel-controls{
-    position:absolute;left:8px;right:8px;bottom:8px;display:flex;justify-content:space-between;gap:8px;
-  }
+.media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+  border-radius: 8px;
+}
+
+/* Hover zoom */
+.card:hover .media img {
+  transform: scale(1.12);
+}
+
   .carousel-controls button{background:rgba(0,0,0,0.4);color:#fff;border:none;padding:6px 8px;border-radius:6px;cursor:pointer}
   .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
   .product-title{font-weight:600;margin:0;font-size:1rem}
