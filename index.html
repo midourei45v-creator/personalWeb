@@ -259,6 +259,7 @@ async function fetchAndRender(){
     });
 
     RAW_ROWS = rows; // store raw
+    console.log("Parsed image URLs:", rows.map(r => parseImagesField(r["picture"])).flat());
     renderCards(rows);
     populateFilters(rows);
   } catch(err){
