@@ -159,13 +159,13 @@ function formatStars(n){
 function buildCardHTML(item, idx){
   // item: object with keys matching sheet headers
   const product = item["Product"] || "Unnamed Product";
-  const requestBy = item["Your name"] || item["Your Name"] || item["Request_by"] || "-";
+  const requestBy = item["Your_name"] || item["Your Name"] || item["Request_by"] || "-";
   const location = item["Location"] || "-";
   const shop = item["Shop"] || "-";
-  const number = item["件數"] || "-";
-  const need = item["必買"] || ""; // numeric rating
+  const number = item["件數"] || item["Number"] ||item["number"] ||"-";
+  const need = item["必買"] ||item["Need"] || ""; // numeric rating
   const notes = item["Notes"] || "";
-  const price = item["參考價錢(港元/日元)"] || "";
+  const price = item["參考價錢(港元/日元)"] ||item["Price"] || item["price"] ||"";
   const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["Time"] || "";
   const images = parseImagesField(item["picture"] || item["picture "] || item["Picture"] || "");
 
