@@ -355,6 +355,14 @@ function renderCards(rows) {
 
     show(0);
   });
+  
+  // Step 5: allow clicking an image to open in a new tab
+  document.querySelectorAll('.card .media img').forEach(img => {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', () => {
+      window.open(img.src, '_blank');
+    });
+  });
 }
 
 
