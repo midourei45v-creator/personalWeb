@@ -41,6 +41,8 @@
   background: #eee;
   position: relative;
   overflow: hidden; /* important so zoom stays inside card */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .media img {
@@ -49,6 +51,7 @@
   object-fit: cover;
   transition: transform 0.3s ease;
   border-radius: 8px;
+  display: none;
 }
 
 /* Hover zoom 
@@ -56,6 +59,25 @@
   transform: scale(1.12);
 }*/
 
+  .carousel-outside {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .carousel-outside button {
+    background: #f3f6fb;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #333;
+  }
+  .carousel-outside .count {
+    font-size: 0.9rem;
+    color: #555;
+  }
   .carousel-controls button{background:rgba(0,0,0,0.4);color:#fff;border:none;padding:6px 8px;border-radius:6px;cursor:pointer}
   .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
   .product-title{font-weight:600;margin:0;font-size:1rem}
@@ -150,21 +172,29 @@ function buildCardHTML(item, idx){
   // header of card
   let html = `<article class="card" data-ts="${tsRaw ? (new Date(tsRaw)).getTime() : 0}" id="card-${idx}">`;
 
-  // media area + carousel
+  // --- media area + outside carousel (B2-OUT-B) ---
   html += `<div class="media">`;
-  if (images.length === 0){
+  
+  if (images.length === 0) {
     html += `<div class="placeholder">No image</div>`;
   } else {
-    // show first image and attach data for carousel via data-images attribute
-    html += `<img src="${images[0]}" alt="${escapeHtml(product)}" data-images='${JSON.stringify(images)}'/>`;
-    if (images.length > 1) {
-      html += `<div class="carousel-controls">
-        <button class="prev" aria-label="Prev image">◀</button>
-        <button class="next" aria-label="Next image">▶</button>
-      </div>`;
-    }
+    // add all images (hidden by default)
+    images.forEach((url, i) => {
+      html += `<img src="${url}" alt="${escapeHtml(product)}" style="display:${i === 0 ? 'block' : 'none'};">`;
+    });
   }
-  html += `</div>`; // end media
+  
+  html += `</div>`; // end .media
+  
+  // carousel controls BELOW the image
+  if (images.length > 1) {
+    html += `
+    <div class="carousel-outside">
+      <button class="prev">◀</button>
+      <span class="count">1 / ${images.length}</span>
+      <button class="next">▶</button>
+    </div>`;
+  }
 
   // body
   html += `<div class="card-body">`;
@@ -266,7 +296,7 @@ async function fetchAndRender(){
   }
 }
 
-function renderCards(rows){
+function renderCards(rows) {
   const out = document.getElementById("output");
   const sortSel = document.getElementById("sortSelect");
   const order = sortSel?.value || "new";
@@ -288,7 +318,6 @@ function renderCards(rows){
     return locMatch && shopMatch && searchMatch;
   });
 
-
   // Step 2: sort the filtered array
   filtered.sort((a, b) => {
     const ta = parseDateForSort(a["timestamp"] || a["TimeStamp"] || a["Timestamp"]);
@@ -307,25 +336,27 @@ function renderCards(rows){
   html += `</div>`;
   out.innerHTML = html;
 
-  // Step 4: attach carousel button handlers
-  document.querySelectorAll(".card .prev, .card .next").forEach(btn => {
-    btn.addEventListener("click", ev => {
-      const card = ev.target.closest(".card");
-      const img = card.querySelector(".media img");
-      if (!img) return;
-      let images = JSON.parse(img.getAttribute("data-images") || "[]");
-      if (images.length < 2) return;
-      let idx = images.indexOf(img.src);
-      if (idx === -1) idx = 0;
-      if (ev.target.classList.contains("prev")) {
-        idx = (idx - 1 + images.length) % images.length;
-      } else {
-        idx = (idx + 1) % images.length;
-      }
-      img.src = images[idx];
-    });
+  // Step 4: attach carousel button handlers (B2-OUT-B)
+  document.querySelectorAll('.card').forEach(card => {
+    const imgs = card.querySelectorAll('.media img');
+    const prev = card.querySelector('.carousel-outside .prev');
+    const next = card.querySelector('.carousel-outside .next');
+    const count = card.querySelector('.carousel-outside .count');
+    if (!imgs.length || !prev || !next) return;
+
+    let current = 0;
+    function show(index) {
+      imgs.forEach((img, i) => img.style.display = i === index ? 'block' : 'none');
+      count.textContent = `${index + 1} / ${imgs.length}`;
+    }
+
+    prev.onclick = () => show((current = (current - 1 + imgs.length) % imgs.length));
+    next.onclick = () => show((current = (current + 1) % imgs.length));
+
+    show(0);
   });
 }
+
 
 function parseDateForSort(s) {
   if (!s) return 0;
