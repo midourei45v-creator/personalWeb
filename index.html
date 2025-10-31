@@ -102,10 +102,13 @@
     
     <label>
       Sort:
-      <select id="sortSelect" title="Sort by timestamp">
+      <select id="sortSelect" title="Sort">
         <option value="new">Newest first</option>
         <option value="old">Oldest first</option>
+        <option value="needHigh">Need (High → Low)</option>
+        <option value="needLow">Need (Low → High)</option>
       </select>
+
     </label>
     <label>
       Location:
@@ -166,7 +169,7 @@ function buildCardHTML(item, idx){
   const need = item["必買"] ||item["Need"] || ""; // numeric rating
   const notes = item["Notes"] || "";
   const price = item["參考價錢(港元/日元)"] ||item["Price"] || item["price"] ||"";
-  const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["Time"] || "";
+  const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["Time"] || item["時間戳記"] || "";
   const images = parseImagesField(item["picture"] || item["picture "] || item["Picture"] || "");
 
   // header of card
@@ -320,9 +323,23 @@ function renderCards(rows) {
 
   // Step 2: sort the filtered array
   filtered.sort((a, b) => {
-    const ta = parseDateForSort(a["timestamp"] || a["TimeStamp"] || a["Timestamp"]);
-    const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"]);
-    return order === "new" ? tb - ta : ta - tb;
+    const ta = parseDateForSort(a["timestamp"] || a["TimeStamp"] || a["Timestamp"] || a["時間戳記"]);
+    const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"] || a["時間戳記"]);
+    const needA = parseInt(a["Need"]) || 0;
+    const needB = parseInt(b["Need"]) || 0;
+  
+    switch (order) {
+      case "new":       // newest first
+        return tb - ta;
+      case "old":       // oldest first
+        return ta - tb;
+      case "needHigh":  // high → low
+        return needB - needA;
+      case "needLow":   // low → high
+        return needA - needB;
+      default:
+        return tb - ta; // fallback: newest
+    }
   });
 
   // Step 3: render
