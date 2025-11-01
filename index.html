@@ -382,20 +382,69 @@ function renderCards(rows) {
   });
 }
 
-
 function parseDateForSort(s) {
   if (!s) return 0;
-  // Try native Date()
-  let d = new Date(s);
-  if (!isNaN(d)) return d.getTime();
 
-  // Try known patterns (Google Form style "2025/10/20 17:43:00")
-  const match = s.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  // normalize whitespace
+  s = String(s).trim();
+
+  // Try native Date() first (handles many ISO / numeric formats)
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d.getTime();
+
+  // Try pattern with Chinese meridiem: "2025/10/10 下午 11:05:49" or "2025/10/10 11:05:49 下午"
+  // Accepts variants with "/" or "-" separators and optional seconds.
+  const zhRegex1 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i;
+  const zhRegex2 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(上午|下午)?/i;
+
+  let match = s.match(zhRegex1) || s.match(zhRegex2);
   if (match) {
-    const [, y, m, d_, hh, mm, ss] = match.map(Number);
-    return new Date(y, m - 1, d_, hh, mm, ss || 0).getTime();
+    // match groups may differ depending on which regex matched — find indices flexibly
+    // We'll map by content: find the meridiem token and time components in the array.
+    let year = parseInt(match[1], 10);
+    let month = parseInt(match[2], 10);
+    let day = parseInt(match[3], 10);
+
+    // find meridiem inside match array (search for 上午 or 下午)
+    let meridiem = "";
+    for (let i = 1; i < match.length; i++) {
+      if (match[i] === "上午" || match[i] === "下午" || match[i] === "AM" || match[i] === "PM") {
+        meridiem = match[i];
+        break;
+      }
+    }
+
+    // find time parts (first occurrence of hh:mm)
+    const timeMatch = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    let hh = 0, mm = 0, ss = 0;
+    if (timeMatch) {
+      hh = parseInt(timeMatch[1], 10);
+      mm = parseInt(timeMatch[2], 10);
+      ss = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
+    }
+
+    // Adjust hour based on Chinese meridiem
+    if (meridiem && /下午|PM/i.test(meridiem)) {
+      if (hh < 12) hh += 12;
+    } else if (meridiem && /上午|AM/i.test(meridiem)) {
+      // 12 AM -> 0 hour
+      if (hh === 12) hh = 0;
+    }
+    const dateObj = new Date(year, month - 1, day, hh, mm, ss);
+    if (!isNaN(dateObj.getTime())) return dateObj.getTime();
   }
-  return 0;
+
+  // Try common pattern without Chinese meridiem: "YYYY/MM/DD HH:MM:SS"
+  const match2 = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (match2) {
+    const [ , y, m, d_, hh, mm, ss ] = match2.map(Number);
+    const dateObj = new Date(y, m - 1, d_, hh, mm || 0, ss || 0);
+    if (!isNaN(dateObj.getTime())) return dateObj.getTime();
+  }
+
+  // Fallback: try Date.parse again, else return 0
+  const parsed = Date.parse(s);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 
