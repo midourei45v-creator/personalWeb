@@ -89,7 +89,22 @@
   .footer{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-top:1px solid #f0f2f6;background:#fafbfe;font-size:0.85rem}
   .timestamp{color:var(--muted)}
   .placeholder{display:flex;align-items:center;justify-content:center;height:100%;color:#777;font-size:0.95rem}
-  @media (max-width:420px){ .media{height:150px} }
+  /* responsive: hide the controls on narrow screens */
+  @media (max-width:720px) {
+    .controls {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .controls.show {
+      display: flex;
+    }
+    header { flex-wrap:wrap; align-items:flex-start; }
+    .controls > * { width: auto; } /* keep items compact */
+  }
+
 </style>
 </head>
 <body>
@@ -98,6 +113,7 @@
   <h1>📦Buy List</h1>
 
   <div class="controls">
+    <button id="toggleControlsBtn" aria-expanded="true" style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;background:#fff">Filters ▾</button>
     <input type="search" id="searchInput" placeholder="Search product..." style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;width:160px">
     
     <label>
@@ -125,7 +141,17 @@
     </label>
 
 
-    <button id="refreshBtn">Refresh</button>
+    <button id="refreshBtn" style="white-space:nowrap">Refresh now</button>
+    <label style="display:inline-flex;align-items:center;gap:6px;">
+      Auto-refresh:
+      <select id="refreshSelect" title="Auto-refresh interval" style="margin-left:6px;padding:6px;border-radius:6px;border:1px solid #d0d7e6;background:#fff">
+        <option value="0">Off</option>
+        <option value="30000">30s</option>
+        <option value="60000">60s</option>
+        <option value="300000" selected>5m</option>
+      </select>
+    </label>
+
   </div>
 </header>
 
@@ -136,7 +162,8 @@
 <script>
 const SHEET_ID = "1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ"; // <-- replace me
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-const REFRESH_INTERVAL_MS = 60000; // auto-refresh every 60s (change or set to 0 to disable)
+const REFRESH_INTERVAL_MS = 1800000; // auto-refresh every 60s (change or set to 0 to disable
+let refreshTimer = null;
 
 let RAW_ROWS = []; // internal data store (array of objects)
 
@@ -458,9 +485,38 @@ document.getElementById("searchInput")?.addEventListener("input", () => renderCa
 
 // initial load
 fetchAndRender();
+// Controls toggle for mobile
+const toggleBtn = document.getElementById("toggleControlsBtn");
+toggleBtn?.addEventListener("click", () => {
+  const controls = document.querySelector(".controls");
+  if (!controls) return;
+  const isShown = controls.classList.toggle("show");
+  toggleBtn.setAttribute("aria-expanded", String(isShown));
+  toggleBtn.textContent = isShown ? "Filters ▴" : "Filters ▾";
+});
+
+function setRefreshInterval(ms) {
+  if (refreshTimer) clearInterval(refreshTimer);
+  if (ms > 0) {
+    refreshTimer = setInterval(fetchAndRender, ms);
+  } else {
+    refreshTimer = null;
+  }
+  REFRESH_INTERVAL_MS = ms;
+}
+
+// wire UI
+document.getElementById("refreshBtn")?.addEventListener("click", () => fetchAndRender());
+document.getElementById("refreshSelect")?.addEventListener("change", (e) => {
+  const ms = parseInt(e.target.value, 10) || 0;
+  setRefreshInterval(ms);
+});
+
+// initialize refresh timer according to default selection
+setRefreshInterval(REFRESH_INTERVAL_MS);
 
 // auto refresh if requested
-if (REFRESH_INTERVAL_MS > 0) setInterval(fetchAndRender, REFRESH_INTERVAL_MS);
+//if (REFRESH_INTERVAL_MS > 0) setInterval(fetchAndRender, REFRESH_INTERVAL_MS);
 </script>
 
 </body>
