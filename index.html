@@ -162,7 +162,7 @@
 <script>
 const SHEET_ID = "1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ"; // <-- replace me
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-const REFRESH_INTERVAL_MS = 1800000; // auto-refresh every 60s (change or set to 0 to disable
+let REFRESH_INTERVAL_MS = 1800000; // auto-refresh every 60s (change or set to 0 to disable
 let refreshTimer = null;
 
 let RAW_ROWS = []; // internal data store (array of objects)
@@ -196,7 +196,7 @@ function buildCardHTML(item, idx){
   const need = item["必買"] ||item["Need"] || ""; // numeric rating
   const notes = item["Notes"] || "";
   const price = item["參考價錢(港元/日元)"] ||item["Price"] || item["price"] ||"";
-  const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["Time"] || item["時間戳記"] || "";
+  const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"] || b["時間戳記"]);
   const images = parseImagesField(item["picture"] || item["picture "] || item["Picture"] || "");
 
   // header of card
@@ -352,8 +352,8 @@ function renderCards(rows) {
   filtered.sort((a, b) => {
     const ta = parseDateForSort(a["timestamp"] || a["TimeStamp"] || a["Timestamp"] || a["時間戳記"]);
     const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"] || a["時間戳記"]);
-    const needA = parseInt(a["Need"]) || 0;
-    const needB = parseInt(b["Need"]) || 0;
+    const needA = parseInt(a["必買"] || a["Need"]) || 0;
+    const needB = parseInt(b["必買"] || b["Need"]) || 0;
   
     switch (order) {
       case "new":       // newest first
@@ -506,7 +506,6 @@ function setRefreshInterval(ms) {
 }
 
 // wire UI
-document.getElementById("refreshBtn")?.addEventListener("click", () => fetchAndRender());
 document.getElementById("refreshSelect")?.addEventListener("change", (e) => {
   const ms = parseInt(e.target.value, 10) || 0;
   setRefreshInterval(ms);
