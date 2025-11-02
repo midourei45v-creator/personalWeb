@@ -196,7 +196,8 @@ function buildCardHTML(item, idx){
   const need = item["必買"] ||item["Need"] || ""; // numeric rating
   const notes = item["Notes"] || "";
   const price = item["參考價錢(港元/日元)"] ||item["Price"] || item["price"] ||"";
-  const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"] || b["時間戳記"]);
+  const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["時間戳記"];
+  const tb = parseDateForSort(tsRaw);
   const images = parseImagesField(item["picture"] || item["picture "] || item["Picture"] || "");
 
   // header of card
