@@ -4,135 +4,103 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Live Goods Requests</title>
+
 <style>
-  :root{
-    --bg:#f5f7fb; --card:#fff; --muted:#666; --accent:#2366d6;
-  }
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:var(--bg); margin:20px;}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-  h1{font-size:1.1rem;margin:0}
-  .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
-  select, button{padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;background:#fff}
-  #output{min-height:80vh}
-  .card-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-    gap:18px;
-  }
-  /* Full-screen overlay for filters (mobile focus mode) */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: none;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 60px;
-    z-index: 999;
-  }
-  .overlay.show { display: flex; }
-  
-  .overlay-content {
-    background: #fff;
-    padding: 16px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  }
-  
-  /* When overlay open, prevent body scroll */
-  body.noscroll { overflow: hidden; }
-  /* Overlay container */
-  #filterOverlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.98);
-    display: none;
-    flex-direction: column;
-    padding: 20px;
-    z-index: 1000;
-    overflow-y: auto;
-  }
-  
-  /* Show when active */
-  #filterOverlay.show {
-    display: flex;
-  }
-  
-  /* Prevent background scroll */
-  body.noscroll {
-    overflow: hidden;
-  }
-  
-  /* Controls stacked vertically */
-  #filterOverlay .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  /* Close button */
-  #closeOverlayBtn {
-    align-self: flex-end;
-    padding: 6px 12px;
-    background: #2366d6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-  }
-  /* --- Collapsible filter panel --- */
+:root {
+  --bg: #f5f7fb;
+  --card: #fff;
+  --muted: #666;
+  --accent: #2366d6;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background: var(--bg);
+  margin: 20px;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.filter-toggle {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d0d7e6;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* --- Collapsible filter panel --- */
+.filter-panel {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.filter-panel.show {
+  display: flex;
+}
+
+.filter-panel label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+select, button, input[type="search"] {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d0d7e6;
+  background: #fff;
+}
+
+/* Responsive layout for narrow screens */
+@media (max-width: 720px) {
   .filter-panel {
-    display: none;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-    background: #fff;
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    flex-direction: column;
+    align-items: stretch;
   }
-  .filter-panel.show {
-    display: flex;
+  .filter-panel label,
+  .filter-panel input,
+  .filter-panel select,
+  .filter-panel button {
+    width: 100%;
   }
-  
-  .filter-toggle {
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #d0d7e6;
-    background: #fff;
-    cursor: pointer;
-  }
-  
-  @media (max-width:720px) {
-    .filter-panel {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .filter-panel label,
-    .filter-panel input,
-    .filter-panel select,
-    .filter-panel button {
-      width: 100%;
-    }
-  }
+}
 
+#output {
+  min-height: 80vh;
+}
 
-  .card{
-    background:var(--card);
-    border-radius:12px;
-    box-shadow:0 4px 18px rgba(20,30,60,0.06);
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-  }
-  .card-image {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-  border-radius: 8px;
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(20, 30, 60, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .media {
@@ -140,7 +108,7 @@
   height: 300px;
   background: #eee;
   position: relative;
-  overflow: hidden; /* important so zoom stays inside card */
+  overflow: hidden;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
@@ -150,65 +118,61 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
-  border-radius: 8px;
-  display: none;
 }
 
-/* Hover zoom 
-.card:hover .media img {
-  transform: scale(1.12);
-}*/
+.card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  .carousel-outside {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin-top: 6px;
-  }
-  .carousel-outside button {
-    background: #f3f6fb;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    color: #333;
-  }
-  .carousel-outside .count {
-    font-size: 0.9rem;
-    color: #555;
-  }
-  .carousel-controls button{background:rgba(0,0,0,0.4);color:#fff;border:none;padding:6px 8px;border-radius:6px;cursor:pointer}
-  .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
-  .product-title{font-weight:600;margin:0;font-size:1rem}
-  .meta-row{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:0.9rem}
-  .meta-item{background:#f3f6fb;padding:6px 8px;border-radius:8px}
-  .inline{display:inline-flex;align-items:center;gap:8px}
-  .stars{color:#f2b01e}
-  .notes{font-size:0.9rem;color:#222}
-  .footer{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-top:1px solid #f0f2f6;background:#fafbfe;font-size:0.85rem}
-  .timestamp{color:var(--muted)}
-  .placeholder{display:flex;align-items:center;justify-content:center;height:100%;color:#777;font-size:0.95rem}
-  /* responsive: hide the controls on narrow screens */
-  @media (max-width:720px) {
-    .controls {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      width: 100%;
-      margin-top: 8px;
-    }
-    .controls.show {
-      display: flex;
-    }
-    header { flex-wrap:wrap; align-items:flex-start; }
-    .controls > * { width: auto; } /* keep items compact */
-  }
+.product-title {
+  font-weight: 600;
+  margin: 0;
+  font-size: 1rem;
+}
 
+.meta-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.meta-item {
+  background: #f3f6fb;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid #f0f2f6;
+  background: #fafbfe;
+  font-size: 0.85rem;
+}
+
+.timestamp {
+  color: var(--muted);
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #777;
+  font-size: 0.95rem;
+}
 </style>
 </head>
-<body>
 
+<body>
 <header>
   <h1>📦 Buy List</h1>
   <button id="toggleFiltersBtn" class="filter-toggle">Filters ▾</button>
@@ -226,16 +190,12 @@
 
     <label>
       Location:
-      <select id="filterLocation">
-        <option value="">All</option>
-      </select>
+      <select id="filterLocation"><option value="">All</option></select>
     </label>
 
     <label>
       Shop:
-      <select id="filterShop">
-        <option value="">All</option>
-      </select>
+      <select id="filterShop"><option value="">All</option></select>
     </label>
 
     <input type="search" id="searchInput" placeholder="Search product...">
@@ -243,452 +203,191 @@
   </div>
 </header>
 
-<!-- Hidden overlay for filters -->
-<div id="filterOverlay" class="overlay">
-  <div class="overlay-content">
-    <div class="controls">
-      <input type="search" id="searchInput" placeholder="Search product...">
-      <!-- rest of your controls -->
-      <label>Sort:
-        <select id="sortSelect">
-          <option value="new">Newest first</option>
-          <option value="old">Oldest first</option>
-          <option value="needHigh">Need (High → Low)</option>
-          <option value="needLow">Need (Low → High)</option>
-        </select>
-      </label>
-      <label>Location:
-        <select id="filterLocation"><option value="">All</option></select>
-      </label>
-      <label>Shop:
-        <select id="filterShop"><option value="">All</option></select>
-      </label>
-      <button id="refreshBtn">Refresh now</button>
-      <label>Auto-refresh:
-        <select id="refreshSelect">
-          <option value="0">Off</option>
-          <option value="30000">30 s</option>
-          <option value="60000">60 s</option>
-          <option value="300000" selected>5 m</option>
-        </select>
-      </label>
-      <button id="closeOverlayBtn">Close ✕</button>
-    </div>
-  </div>
-</div>
-
 <main>
   <div id="output">Loading...</div>
 </main>
 
 <script>
-const SHEET_ID = "1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ"; // <-- replace me
+const SHEET_ID = "1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ";
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-const overlay = document.getElementById("filterOverlay");
-const openBtn = document.getElementById("toggleControlsBtn");
-const closeBtn = document.getElementById("closeOverlayBtn");
 
-openBtn.addEventListener("click", () => {
-  overlay.classList.add("show");
-  document.body.classList.add("noscroll");
-});
-
-closeBtn.addEventListener("click", () => {
-  overlay.classList.remove("show");
-  document.body.classList.remove("noscroll");
-});
-
-
-let REFRESH_INTERVAL_MS = 1800000; // auto-refresh every 60s (change or set to 0 to disable
+let RAW_ROWS = [];
+let REFRESH_INTERVAL_MS = 1800000; // 30 minutes
 let refreshTimer = null;
-
-let RAW_ROWS = []; // internal data store (array of objects)
-
-function parseImagesField(field) {
-  if (!field) return [];
-  return field
-    .split(/\s+/) // split by spaces
-    .map(link => {
-      const match = link.match(/(?:id=|\/d\/)([-\w]{10,})/);
-      if (match) {
-        const id = match[1];
-        return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
-      }
-      return link;
-    });
-}
-
-function formatStars(n){
-  const count = Math.max(0, Math.min(5, parseInt(n) || 0));
-  return "★".repeat(count) + "☆".repeat(Math.max(0,5-count));
-}
-
-function buildCardHTML(item, idx){
-  // item: object with keys matching sheet headers
-  const product = item["Product"] || "Unnamed Product";
-  const requestBy = item["Your_name"] || item["Your Name"] || item["Request_by"] || "-";
-  const location = item["Location"] || "-";
-  const shop = item["Shop"] || "-";
-  const number = item["件數"] || item["Number"] ||item["number"] ||"-";
-  const need = item["必買"] ||item["Need"] || ""; // numeric rating
-  const notes = item["Notes"] || "";
-  const price = item["參考價錢(港元/日元)"] ||item["Price"] || item["price"] ||"";
-  const tsRaw = item["timestamp"] || item["TimeStamp"] || item["Timestamp"] || item["時間戳記"];
-  const tb = parseDateForSort(tsRaw);
-  const images = parseImagesField(item["picture"] || item["picture "] || item["Picture"] || "");
-
-  // header of card
-  let html = `<article class="card" data-ts="${tsRaw ? (new Date(tsRaw)).getTime() : 0}" id="card-${idx}">`;
-
-  // --- media area + outside carousel (B2-OUT-B) ---
-  html += `<div class="media">`;
-  
-  if (images.length === 0) {
-    html += `<div class="placeholder">No image</div>`;
-  } else {
-    // add all images (hidden by default)
-    images.forEach((url, i) => {
-      html += `<img src="${url}" alt="${escapeHtml(product)}" style="display:${i === 0 ? 'block' : 'none'};">`;
-    });
-  }
-  
-  html += `</div>`; // end .media
-  
-  // carousel controls BELOW the image
-  if (images.length > 1) {
-    html += `
-    <div class="carousel-outside">
-      <button class="prev">◀</button>
-      <span class="count">1 / ${images.length}</span>
-      <button class="next">▶</button>
-    </div>`;
-  }
-
-  // body
-  html += `<div class="card-body">`;
-  html += `<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-             <div style="flex:1">
-               <p class="product-title">${escapeHtml(product)}</p>
-               <div class="meta-row">
-                 <div class="meta-item">Request by: <strong>${escapeHtml(requestBy)}</strong></div>
-                 <div class="meta-item">Price: ${escapeHtml(price||"-")}</div>
-               </div>
-             </div>
-           </div>`;
-
-  html += `<div class="meta-row" style="margin-top:6px">
-             <div class="meta-item">Location: ${escapeHtml(location)}</div>
-             <div class="meta-item">Shop: ${escapeHtml(shop)}</div>
-           </div>`;
-
-  html += `<div class="meta-row" style="margin-top:6px">
-             <div class="meta-item">Number: ${escapeHtml(number)}</div>
-             <div class="meta-item">Need: <span class="stars">${escapeHtml(formatStars(need))}</span></div>
-           </div>`;
-
-  if (notes) html += `<div class="notes">${escapeHtml(notes)}</div>`;
-
-  html += `</div>`; // end card-body
-
-  // footer with hidden timestamp (but accessible for sorting)
-  html += `<div class="footer">
-             <div class="timestamp">${isNaN(new Date(tsRaw)) ? "" : new Date(tsRaw).toLocaleString()}</div>
-           </div>`;
-
-  html += `</article>`;
-  return html;
-}
-  
-function populateFilters(rows) {
-  const locSet = new Set();
-  const shopSet = new Set();
-
-  rows.forEach(r => {
-    if (r["Location"]) r["Location"].split(/,|;/).forEach(v => locSet.add(v.trim()));
-    if (r["Shop"]) r["Shop"].split(/,|;/).forEach(v => shopSet.add(v.trim()));
-  });
-
-  const locSelect = document.getElementById("filterLocation");
-  const shopSelect = document.getElementById("filterShop");
-
-  // Fill Location filter
-  if (locSelect) {
-    locSelect.innerHTML = '<option value="">All</option>' +
-      Array.from(locSet).sort().map(v => `<option>${v}</option>`).join("");
-  }
-
-  // Fill Shop filter
-  if (shopSelect) {
-    shopSelect.innerHTML = '<option value="">All</option>' +
-      Array.from(shopSet).sort().map(v => `<option>${v}</option>`).join("");
-  }
-}
 
 function escapeHtml(str){
   if(!str && str !== 0) return "";
   return String(str).replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
 }
-function parseGoogleGviz(txt) {
-  // Remove leading JS callback wrapper used by Google's gviz output
-  const jsonStr = txt
-    .substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
-  try {
-    return JSON.parse(jsonStr);
-  } catch (e) {
-    console.error("Failed to parse GViz JSON", e);
-    return { table: { cols: [], rows: [] } };
+
+function parseImagesField(field){
+  if(!field) return [];
+  return field.split(/\s+/).map(link=>{
+    const match = link.match(/(?:id=|\/d\/)([-\w]{10,})/);
+    return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : link;
+  });
+}
+
+function formatStars(n){
+  const c = Math.max(0,Math.min(5,parseInt(n)||0));
+  return "★".repeat(c) + "☆".repeat(5-c);
+}
+
+function parseDateForSort(s){
+  if(!s) return 0;
+  s = String(s).trim();
+  let d = new Date(s);
+  if(!isNaN(d)) return d.getTime();
+
+  const zh = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/;
+  const m = s.match(zh);
+  if(m){
+    let [_, y, mo, da, ampm, h, mi, se] = m;
+    y = +y; mo = +mo-1; da = +da; h = +h; mi = +mi; se = +se||0;
+    if(ampm==="下午" && h<12) h+=12;
+    if(ampm==="上午" && h===12) h=0;
+    const dt = new Date(y,mo,da,h,mi,se);
+    return isNaN(dt)?0:dt.getTime();
   }
+  return 0;
+}
+
+function buildCardHTML(item){
+  const p=item["Product"]||"Unnamed";
+  const imgs=parseImagesField(item["picture"]||item["Picture"]);
+  const time=item["timestamp"]||item["時間戳記"];
+  const loc=item["Location"]||"-", shop=item["Shop"]||"-";
+  const need=item["必買"]||item["Need"], num=item["件數"]||item["Number"];
+  const notes=item["Notes"]||"", price=item["Price"]||item["參考價錢(港元/日元)"];
+  let html=`<article class="card" data-ts="${parseDateForSort(time)}">`;
+  html+=`<div class="media">`;
+  if(imgs.length) imgs.forEach((u,i)=>html+=`<img src="${u}" style="display:${i===0?'block':'none'};">`);
+  else html+=`<div class="placeholder">No image</div>`;
+  html+=`</div>`;
+  if(imgs.length>1) html+=`
+  <div class="carousel-outside">
+    <button class="prev">◀</button>
+    <span class="count">1 / ${imgs.length}</span>
+    <button class="next">▶</button>
+  </div>`;
+  html+=`<div class="card-body">
+      <p class="product-title">${escapeHtml(p)}</p>
+      <div class="meta-row">
+        <div class="meta-item">Price: ${escapeHtml(price||"-")}</div>
+        <div class="meta-item">Number: ${escapeHtml(num||"-")}</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-item">Location: ${escapeHtml(loc)}</div>
+        <div class="meta-item">Shop: ${escapeHtml(shop)}</div>
+      </div>
+      <div class="meta-row"><div class="meta-item">Need: <span class="stars">${formatStars(need)}</span></div></div>
+      ${notes?`<div class="notes">${escapeHtml(notes)}</div>`:""}
+    </div>`;
+  html+=`<div class="footer"><div class="timestamp">${time||""}</div></div></article>`;
+  return html;
 }
 
 async function fetchAndRender(){
-  const out = document.getElementById("output");
-  out.innerHTML = "Loading...";
-  try {
-    const r = await fetch(SHEET_URL);
-    const txt = await r.text();
-    const json = parseGoogleGviz(txt);
-    const cols = json.table.cols.map(c => c.label || "");
-    const rows = json.table.rows.map(row => {
-      const obj = {};
-      (row.c || []).forEach((cell,i) => obj[cols[i]||`col${i}`] = cell ? cell.v : "");
-      return obj;
+  const out=document.getElementById("output");
+  out.textContent="Loading...";
+  try{
+    const r=await fetch(SHEET_URL);
+    const txt=await r.text();
+    const json=JSON.parse(txt.substring(txt.indexOf("{"),txt.lastIndexOf("}")+1));
+    const cols=json.table.cols.map(c=>c.label);
+    RAW_ROWS=json.table.rows.map(r=>{
+      const o={}; (r.c||[]).forEach((c,i)=>o[cols[i]]=c?c.v:""); return o;
     });
-
-    RAW_ROWS = rows; // store raw
-    console.log("Parsed image URLs:", rows.map(r => parseImagesField(r["picture"])).flat());
-    renderCards(rows);
-    populateFilters(rows);
-  } catch(err){
-    console.error(err);
-    out.innerHTML = `<p style="color:red">Failed to load sheet. Open console for details.</p>`;
+    populateFilters(RAW_ROWS);
+    renderCards(RAW_ROWS);
+  }catch(e){
+    out.innerHTML=`<p style="color:red">Load failed</p>`;
+    console.error(e);
   }
 }
 
-function renderCards(rows) {
-  const out = document.getElementById("output");
-  const sortSel = document.getElementById("sortSelect");
-  const order = sortSel?.value || "new";
-  const locSel = document.getElementById("filterLocation")?.value || "";
-  const shopSel = document.getElementById("filterShop")?.value || "";
+function populateFilters(rows){
+  const locSel=document.getElementById("filterLocation");
+  const shopSel=document.getElementById("filterShop");
+  const locs=[...new Set(rows.map(r=>r["Location"]).filter(Boolean))].sort();
+  const shops=[...new Set(rows.map(r=>r["Shop"]).filter(Boolean))].sort();
+  locSel.innerHTML=`<option value="">All</option>${locs.map(l=>`<option>${l}</option>`).join("")}`;
+  shopSel.innerHTML=`<option value="">All</option>${shops.map(s=>`<option>${s}</option>`).join("")}`;
+}
 
-  // Step 1: filter
-  const searchValue = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
+function renderCards(rows){
+  const out=document.getElementById("output");
+  const search=(document.getElementById("searchInput").value||"").toLowerCase();
+  const loc=document.getElementById("filterLocation").value||"";
+  const shop=document.getElementById("filterShop").value||"";
+  const order=document.getElementById("sortSelect").value;
 
-  let filtered = rows.filter(r => {
-    const loc = (r["Location"] || "").toLowerCase();
-    const shop = (r["Shop"] || "").toLowerCase();
-    const product = (r["Product"] || "").toLowerCase();
-
-    const locMatch = !locSel || loc.includes(locSel.toLowerCase());
-    const shopMatch = !shopSel || shop.includes(shopSel.toLowerCase());
-    const searchMatch = !searchValue || product.includes(searchValue);
-
-    return locMatch && shopMatch && searchMatch;
+  let f=rows.filter(r=>{
+    const p=(r["Product"]||"").toLowerCase();
+    const l=(r["Location"]||"").toLowerCase();
+    const s=(r["Shop"]||"").toLowerCase();
+    return (!search||p.includes(search)) &&
+           (!loc||l.includes(loc.toLowerCase())) &&
+           (!shop||s.includes(shop.toLowerCase()));
   });
 
-  // Step 2: sort the filtered array
-  filtered.sort((a, b) => {
-    const ta = parseDateForSort(a["timestamp"] || a["TimeStamp"] || a["Timestamp"] || a["時間戳記"]);
-    const tb = parseDateForSort(b["timestamp"] || b["TimeStamp"] || b["Timestamp"] || a["時間戳記"]);
-    const needA = parseInt(a["必買"] || a["Need"]) || 0;
-    const needB = parseInt(b["必買"] || b["Need"]) || 0;
-  
-    switch (order) {
-      case "new":       // newest first
-        return tb - ta;
-      case "old":       // oldest first
-        return ta - tb;
-      case "needHigh":  // high → low
-        return needB - needA;
-      case "needLow":   // low → high
-        return needA - needB;
-      default:
-        return tb - ta; // fallback: newest
+  f.sort((a,b)=>{
+    const ta=parseDateForSort(a["timestamp"]||a["時間戳記"]);
+    const tb=parseDateForSort(b["timestamp"]||b["時間戳記"]);
+    const na=parseInt(a["必買"]||a["Need"])||0;
+    const nb=parseInt(b["必買"]||b["Need"])||0;
+    switch(order){
+      case "old": return ta-tb;
+      case "needHigh": return nb-na;
+      case "needLow": return na-nb;
+      default: return tb-ta;
     }
   });
 
-  // Step 3: render
-  if (filtered.length === 0) {
-    out.innerHTML = "<p>No matching requests found.</p>";
-    return;
-  }
+  out.innerHTML = f.length?`<div class="card-grid">${f.map(buildCardHTML).join("")}</div>`:"<p>No items</p>";
 
-  let html = `<div class="card-grid">`;
-  filtered.forEach((r, i) => html += buildCardHTML(r, i));
-  html += `</div>`;
-  out.innerHTML = html;
-
-  // Step 4: attach carousel button handlers (B2-OUT-B)
-  document.querySelectorAll('.card').forEach(card => {
-    const imgs = card.querySelectorAll('.media img');
-    const prev = card.querySelector('.carousel-outside .prev');
-    const next = card.querySelector('.carousel-outside .next');
-    const count = card.querySelector('.carousel-outside .count');
-    if (!imgs.length || !prev || !next) return;
-
-    let current = 0;
-    function show(index) {
-      imgs.forEach((img, i) => img.style.display = i === index ? 'block' : 'none');
-      count.textContent = `${index + 1} / ${imgs.length}`;
-    }
-
-    prev.onclick = () => show((current = (current - 1 + imgs.length) % imgs.length));
-    next.onclick = () => show((current = (current + 1) % imgs.length));
-
-    show(0);
-  });
-  
-  // Step 5: allow clicking an image to open in a new tab
-  document.querySelectorAll('.card .media img').forEach(img => {
-    img.style.cursor = 'pointer';
-    img.addEventListener('click', () => {
-      window.open(img.src, '_blank');
-    });
+  document.querySelectorAll(".card").forEach(card=>{
+    const imgs=card.querySelectorAll(".media img");
+    const prev=card.querySelector(".prev");
+    const next=card.querySelector(".next");
+    const count=card.querySelector(".count");
+    if(!imgs.length) return;
+    let cur=0;
+    function show(i){imgs.forEach((im,ix)=>im.style.display=ix===i?"block":"none"); if(count)count.textContent=`${i+1}/${imgs.length}`;}
+    prev&&prev.addEventListener("click",()=>show(cur=(cur-1+imgs.length)%imgs.length));
+    next&&next.addEventListener("click",()=>show(cur=(cur+1)%imgs.length));
+    imgs.forEach(img=>img.addEventListener("click",()=>window.open(img.src,"_blank")));
   });
 }
 
-function parseDateForSort(s) {
-  if (!s) return 0;
-
-  // normalize whitespace
-  s = String(s).trim();
-
-  // Try native Date() first (handles many ISO / numeric formats)
-  let d = new Date(s);
-  if (!isNaN(d.getTime())) return d.getTime();
-
-  // Try pattern with Chinese meridiem: "2025/10/10 下午 11:05:49" or "2025/10/10 11:05:49 下午"
-  // Accepts variants with "/" or "-" separators and optional seconds.
-  const zhRegex1 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i;
-  const zhRegex2 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(上午|下午)?/i;
-
-  let match = s.match(zhRegex1) || s.match(zhRegex2);
-  if (match) {
-    // match groups may differ depending on which regex matched — find indices flexibly
-    // We'll map by content: find the meridiem token and time components in the array.
-    let year = parseInt(match[1], 10);
-    let month = parseInt(match[2], 10);
-    let day = parseInt(match[3], 10);
-
-    // find meridiem inside match array (search for 上午 or 下午)
-    let meridiem = "";
-    for (let i = 1; i < match.length; i++) {
-      if (match[i] === "上午" || match[i] === "下午" || match[i] === "AM" || match[i] === "PM") {
-        meridiem = match[i];
-        break;
-      }
-    }
-
-    // find time parts (first occurrence of hh:mm)
-    const timeMatch = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-    let hh = 0, mm = 0, ss = 0;
-    if (timeMatch) {
-      hh = parseInt(timeMatch[1], 10);
-      mm = parseInt(timeMatch[2], 10);
-      ss = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
-    }
-
-    // Adjust hour based on Chinese meridiem
-    if (meridiem && /下午|PM/i.test(meridiem)) {
-      if (hh < 12) hh += 12;
-    } else if (meridiem && /上午|AM/i.test(meridiem)) {
-      // 12 AM -> 0 hour
-      if (hh === 12) hh = 0;
-    }
-    const dateObj = new Date(year, month - 1, day, hh, mm, ss);
-    if (!isNaN(dateObj.getTime())) return dateObj.getTime();
+document.addEventListener("DOMContentLoaded",()=>{
+  const btn=document.getElementById("toggleFiltersBtn");
+  const panel=document.getElementById("filterPanel");
+  if(btn && panel){
+    btn.addEventListener("click",()=>{
+      const show=panel.classList.toggle("show");
+      btn.textContent=show?"Filters ▴":"Filters ▾";
+    });
   }
 
-  // Try common pattern without Chinese meridiem: "YYYY/MM/DD HH:MM:SS"
-  const match2 = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if (match2) {
-    const [ , y, m, d_, hh, mm, ss ] = match2.map(Number);
-    const dateObj = new Date(y, m - 1, d_, hh, mm || 0, ss || 0);
-    if (!isNaN(dateObj.getTime())) return dateObj.getTime();
-  }
+  ["filterLocation","filterShop","sortSelect"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener("change",()=>renderCards(RAW_ROWS));
+  });
+  const search=document.getElementById("searchInput");
+  if(search) search.addEventListener("input",()=>renderCards(RAW_ROWS));
+  const refresh=document.getElementById("refreshBtn");
+  if(refresh) refresh.addEventListener("click",()=>fetchAndRender());
 
-  // Fallback: try Date.parse again, else return 0
-  const parsed = Date.parse(s);
-  return isNaN(parsed) ? 0 : parsed;
+  fetchAndRender();
+  setRefreshInterval(REFRESH_INTERVAL_MS);
+});
+
+function setRefreshInterval(ms){
+  if(refreshTimer) clearInterval(refreshTimer);
+  if(ms>0) refreshTimer=setInterval(fetchAndRender,ms);
+  REFRESH_INTERVAL_MS=ms;
 }
-
-
-document.getElementById("sortSelect")?.addEventListener("change", ()=> renderCards(RAW_ROWS));
-document.getElementById("refreshBtn")?.addEventListener("click", ()=> fetchAndRender());
-["filterLocation", "filterShop"].forEach(id => {
-  document.getElementById(id)?.addEventListener("change", () => renderCards(RAW_ROWS));
-});
-document.getElementById("searchInput")?.addEventListener("input", () => renderCards(RAW_ROWS));
-
-
-// initial load
-fetchAndRender();
-// Controls toggle for mobile
-const toggleBtn = document.getElementById("toggleControlsBtn");
-toggleBtn?.addEventListener("click", () => {
-  const controls = document.querySelector(".controls");
-  if (!controls) return;
-  const isShown = controls.classList.toggle("show");
-  toggleBtn.setAttribute("aria-expanded", String(isShown));
-  toggleBtn.textContent = isShown ? "Filters ▴" : "Filters ▾";
-});
-
-function setRefreshInterval(ms) {
-  if (refreshTimer) clearInterval(refreshTimer);
-  if (ms > 0) {
-    refreshTimer = setInterval(fetchAndRender, ms);
-  } else {
-    refreshTimer = null;
-  }
-  REFRESH_INTERVAL_MS = ms;
-}
-
-// wire UI
-document.getElementById("refreshSelect")?.addEventListener("change", (e) => {
-  const ms = parseInt(e.target.value, 10) || 0;
-  setRefreshInterval(ms);
-});
-
-// initialize refresh timer according to default selection
-setRefreshInterval(REFRESH_INTERVAL_MS);
-
-// auto refresh if requested
-//if (REFRESH_INTERVAL_MS > 0) setInterval(fetchAndRender, REFRESH_INTERVAL_MS);
-// === Overlay toggle for filters (expand/collapse) ===
-document.addEventListener("DOMContentLoaded", () => {
-  const overlay = document.getElementById("filterOverlay");
-  const openBtn = document.getElementById("toggleControlsBtn");
-  const closeBtn = document.getElementById("closeOverlayBtn");
-  const toggleFiltersBtn = document.getElementById("toggleFiltersBtn");
-  const filterPanel = document.getElementById("filterPanel");
-
-  if (toggleFiltersBtn && filterPanel) {
-    toggleFiltersBtn.addEventListener("click", () => {
-      const isShown = filterPanel.classList.toggle("show");
-      toggleFiltersBtn.textContent = isShown ? "Filters ▴" : "Filters ▾";
-    });
-  }
-  if (openBtn && overlay && closeBtn) {
-    openBtn.addEventListener("click", () => {
-      overlay.classList.add("show");
-      document.body.classList.add("noscroll");
-    });
-
-    closeBtn.addEventListener("click", () => {
-      overlay.classList.remove("show");
-      document.body.classList.remove("noscroll");
-    });
-  }
-});
-const toggleFiltersBtn = document.getElementById("toggleFiltersBtn");
-const filterPanel = document.getElementById("filterPanel");
-
-toggleFiltersBtn.addEventListener("click", () => {
-  const isShown = filterPanel.classList.toggle("show");
-  toggleFiltersBtn.textContent = isShown ? "Filters ▴" : "Filters ▾";
-});
-
 </script>
-
 </body>
 </html>
