@@ -43,6 +43,45 @@
   
   /* When overlay open, prevent body scroll */
   body.noscroll { overflow: hidden; }
+  /* Overlay container */
+  #filterOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    display: none;
+    flex-direction: column;
+    padding: 20px;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  
+  /* Show when active */
+  #filterOverlay.show {
+    display: flex;
+  }
+  
+  /* Prevent background scroll */
+  body.noscroll {
+    overflow: hidden;
+  }
+  
+  /* Controls stacked vertically */
+  #filterOverlay .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Close button */
+  #closeOverlayBtn {
+    align-self: flex-end;
+    padding: 6px 12px;
+    background: #2366d6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+  }
 
   .card{
     background:var(--card);
@@ -136,10 +175,29 @@
 
 <header>
   <h1>📦Buy List</h1>
-  <button id="toggleControlsBtn" aria-expanded="false"
-          style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;background:#fff;margin-right:8px">
-    Filters ▾
-  </button>
+  <!-- Always-visible button -->
+  <button id="toggleControlsBtn">Filters ▾</button>
+  
+  <!-- Full-screen overlay -->
+  <div id="filterOverlay" class="overlay">
+    <div class="overlay-content">
+      <button id="closeOverlayBtn">✕ Close</button>
+      <div class="controls">
+        <input id="searchInput" type="search" placeholder="Search product...">
+        <select id="sortSelect">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+          <option value="needHigh">Need (High → Low)</option>
+          <option value="needLow">Need (Low → High)</option>
+        </select>
+        <select id="filterLocation"></select>
+        <select id="filterShop"></select>
+        <button id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+
 </header>
 
 <!-- Hidden overlay for filters -->
@@ -183,6 +241,20 @@
 <script>
 const SHEET_ID = "1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ"; // <-- replace me
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const overlay = document.getElementById("filterOverlay");
+const openBtn = document.getElementById("toggleControlsBtn");
+const closeBtn = document.getElementById("closeOverlayBtn");
+
+openBtn.addEventListener("click", () => {
+  overlay.classList.add("show");
+  document.body.classList.add("noscroll");
+});
+
+closeBtn.addEventListener("click", () => {
+  overlay.classList.remove("show");
+  document.body.classList.remove("noscroll");
+});
+
 
 let REFRESH_INTERVAL_MS = 1800000; // auto-refresh every 60s (change or set to 0 to disable
 let refreshTimer = null;
