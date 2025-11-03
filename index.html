@@ -233,23 +233,51 @@ function formatStars(n){
   return "★".repeat(c) + "☆".repeat(5-c);
 }
 
-function parseDateForSort(s){
-  if(!s) return 0;
+function parseDateForSort(s) {
+  if (!s) return 0;
   s = String(s).trim();
-  let d = new Date(s);
-  if(!isNaN(d)) return d.getTime();
+  s = s.replace(/\u3000/g, ' ').replace(/年|月/g, '/').replace(/日/g, ' ').trim();
 
-  const zh = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/;
-  const m = s.match(zh);
-  if(m){
-    let [_, y, mo, da, ampm, h, mi, se] = m;
-    y = +y; mo = +mo-1; da = +da; h = +h; mi = +mi; se = +se||0;
-    if(ampm==="下午" && h<12) h+=12;
-    if(ampm==="上午" && h===12) h=0;
-    const dt = new Date(y,mo,da,h,mi,se);
-    return isNaN(dt)?0:dt.getTime();
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d.getTime();
+
+  const re1 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(?:([上上午下午APMapm]{2,4})\s*)?(\d{1,2}):(\d{2})(?::(\d{2}))?/i;
+  const re2 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*?(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([上上午下午APMapm]{2,4})?/i;
+
+  let m = s.match(re1) || s.match(re2);
+  if (m) {
+    const year = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10) - 1;
+    const day = parseInt(m[3], 10);
+
+    const timeMatch = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    let hh = 0, mm = 0, ss = 0;
+    if (timeMatch) {
+      hh = parseInt(timeMatch[1], 10);
+      mm = parseInt(timeMatch[2], 10);
+      ss = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
+    }
+
+    const mer = (s.match(/上午|下午|AM|PM|am|pm/i) || [null])[0];
+    if (mer && /下午|PM/i.test(mer)) {
+      if (hh < 12) hh += 12;
+    } else if (mer && /上午|AM/i.test(mer)) {
+      if (hh === 12) hh = 0;
+    }
+
+    const dateObj = new Date(year, month, day, hh, mm, ss);
+    if (!isNaN(dateObj.getTime())) return dateObj.getTime();
   }
-  return 0;
+
+  const match2 = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*?(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (match2) {
+    const [ , y, mo, da, hh, mi, ss ] = match2.map(Number);
+    const dt = new Date(y, mo - 1, da, hh || 0, mi || 0, ss || 0);
+    if (!isNaN(dt.getTime())) return dt.getTime();
+  }
+
+  const parsed = Date.parse(s);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 function buildCardHTML(item){
@@ -306,13 +334,31 @@ async function fetchAndRender(){
   }
 }
 
-function populateFilters(rows){
-  const locSel=document.getElementById("filterLocation");
-  const shopSel=document.getElementById("filterShop");
-  const locs=[...new Set(rows.map(r=>r["Location"]).filter(Boolean))].sort();
-  const shops=[...new Set(rows.map(r=>r["Shop"]).filter(Boolean))].sort();
-  locSel.innerHTML=`<option value="">All</option>${locs.map(l=>`<option>${l}</option>`).join("")}`;
-  shopSel.innerHTML=`<option value="">All</option>${shops.map(s=>`<option>${s}</option>`).join("")}`;
+function populateFilters(rows) {
+  const locSet = new Set();
+  const shopSet = new Set();
+  const splitRE = /[,\.;\/\|\u3001]/;
+
+  rows.forEach(r => {
+    const locRaw = r["Location"] || r["位置"] || "";
+    const shopRaw = r["Shop"] || r["商店"] || "";
+
+    locRaw.split(splitRE).map(s => s.trim()).forEach(t => { if (t) locSet.add(t); });
+    shopRaw.split(splitRE).map(s => s.trim()).forEach(t => { if (t) shopSet.add(t); });
+  });
+
+  const locSel = document.getElementById("filterLocation");
+  const shopSel = document.getElementById("filterShop");
+
+  if (locSel) {
+    locSel.innerHTML = '<option value="">All</option>' +
+      Array.from(locSet).sort((a,b)=>a.localeCompare(b)).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  }
+
+  if (shopSel) {
+    shopSel.innerHTML = '<option value="">All</option>' +
+      Array.from(shopSet).sort((a,b)=>a.localeCompare(b)).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  }
 }
 
 function renderCards(rows){
@@ -322,14 +368,20 @@ function renderCards(rows){
   const shop=document.getElementById("filterShop").value||"";
   const order=document.getElementById("sortSelect").value;
 
-  let f=rows.filter(r=>{
-    const p=(r["Product"]||"").toLowerCase();
-    const l=(r["Location"]||"").toLowerCase();
-    const s=(r["Shop"]||"").toLowerCase();
-    return (!search||p.includes(search)) &&
-           (!loc||l.includes(loc.toLowerCase())) &&
-           (!shop||s.includes(shop.toLowerCase()));
+  const splitRE = /[,\.;\/\|\u3001]/;
+
+  let f = rows.filter(r => {
+    const product = (r["Product"] || "").toLowerCase();
+    const locTokens = (r["Location"] || "").split(splitRE).map(s => s.trim().toLowerCase()).filter(Boolean);
+    const shopTokens = (r["Shop"] || "").split(splitRE).map(s => s.trim().toLowerCase()).filter(Boolean);
+  
+    const locMatch = !loc || locTokens.some(t => t.includes(loc.toLowerCase()));
+    const shopMatch = !shop || shopTokens.some(t => t.includes(shop.toLowerCase()));
+    const searchMatch = !search || product.includes(search);
+  
+    return locMatch && shopMatch && searchMatch;
   });
+
 
   f.sort((a,b)=>{
     const ta=parseDateForSort(a["timestamp"]||a["時間戳記"]);
