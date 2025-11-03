@@ -82,6 +82,42 @@
     border: none;
     border-radius: 8px;
   }
+  /* --- Collapsible filter panel --- */
+  .filter-panel {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .filter-panel.show {
+    display: flex;
+  }
+  
+  .filter-toggle {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #d0d7e6;
+    background: #fff;
+    cursor: pointer;
+  }
+  
+  @media (max-width:720px) {
+    .filter-panel {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .filter-panel label,
+    .filter-panel input,
+    .filter-panel select,
+    .filter-panel button {
+      width: 100%;
+    }
+  }
+
 
   .card{
     background:var(--card);
@@ -174,30 +210,37 @@
 <body>
 
 <header>
-  <h1>📦Buy List</h1>
-  <!-- Always-visible button -->
-  <button id="toggleControlsBtn">Filters ▾</button>
-  
-  <!-- Full-screen overlay -->
-  <div id="filterOverlay" class="overlay">
-    <div class="overlay-content">
-      <button id="closeOverlayBtn">✕ Close</button>
-      <div class="controls">
-        <input id="searchInput" type="search" placeholder="Search product...">
-        <select id="sortSelect">
-          <option value="new">Newest first</option>
-          <option value="old">Oldest first</option>
-          <option value="needHigh">Need (High → Low)</option>
-          <option value="needLow">Need (Low → High)</option>
-        </select>
-        <select id="filterLocation"></select>
-        <select id="filterShop"></select>
-        <button id="refreshBtn">Refresh</button>
-      </div>
-    </div>
+  <h1>📦 Buy List</h1>
+  <button id="toggleFiltersBtn" class="filter-toggle">Filters ▾</button>
+
+  <div id="filterPanel" class="filter-panel">
+    <label>
+      Sort:
+      <select id="sortSelect">
+        <option value="new">Newest first</option>
+        <option value="old">Oldest first</option>
+        <option value="needHigh">Need (High → Low)</option>
+        <option value="needLow">Need (Low → High)</option>
+      </select>
+    </label>
+
+    <label>
+      Location:
+      <select id="filterLocation">
+        <option value="">All</option>
+      </select>
+    </label>
+
+    <label>
+      Shop:
+      <select id="filterShop">
+        <option value="">All</option>
+      </select>
+    </label>
+
+    <input type="search" id="searchInput" placeholder="Search product...">
+    <button id="refreshBtn">🔄 Refresh List</button>
   </div>
-
-
 </header>
 
 <!-- Hidden overlay for filters -->
@@ -628,6 +671,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.remove("noscroll");
     });
   }
+});
+const toggleFiltersBtn = document.getElementById("toggleFiltersBtn");
+const filterPanel = document.getElementById("filterPanel");
+
+toggleFiltersBtn.addEventListener("click", () => {
+  const isShown = filterPanel.classList.toggle("show");
+  toggleFiltersBtn.textContent = isShown ? "Filters ▴" : "Filters ▾";
 });
 
 </script>
