@@ -19,6 +19,31 @@
     grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
     gap:18px;
   }
+  /* Full-screen overlay for filters (mobile focus mode) */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 60px;
+    z-index: 999;
+  }
+  .overlay.show { display: flex; }
+  
+  .overlay-content {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  }
+  
+  /* When overlay open, prevent body scroll */
+  body.noscroll { overflow: hidden; }
+
   .card{
     background:var(--card);
     border-radius:12px;
@@ -111,49 +136,45 @@
 
 <header>
   <h1>📦Buy List</h1>
-
-  <div class="controls">
-    <button id="toggleControlsBtn" aria-expanded="true" style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;background:#fff">Filters ▾</button>
-    <input type="search" id="searchInput" placeholder="Search product..." style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;width:160px">
-    
-    <label>
-      Sort:
-      <select id="sortSelect" title="Sort">
-        <option value="new">Newest first</option>
-        <option value="old">Oldest first</option>
-        <option value="needHigh">Need (High → Low)</option>
-        <option value="needLow">Need (Low → High)</option>
-      </select>
-
-    </label>
-    <label>
-      Location:
-      <select id="filterLocation">
-        <option value="">All</option>
-      </select>
-    </label>
-    
-    <label>
-      Shop:
-      <select id="filterShop">
-        <option value="">All</option>
-      </select>
-    </label>
-
-
-    <button id="refreshBtn" style="white-space:nowrap">Refresh now</button>
-    <label style="display:inline-flex;align-items:center;gap:6px;">
-      Auto-refresh:
-      <select id="refreshSelect" title="Auto-refresh interval" style="margin-left:6px;padding:6px;border-radius:6px;border:1px solid #d0d7e6;background:#fff">
-        <option value="0">Off</option>
-        <option value="30000">30s</option>
-        <option value="60000">60s</option>
-        <option value="300000" selected>5m</option>
-      </select>
-    </label>
-
-  </div>
+  <button id="toggleControlsBtn" aria-expanded="false"
+          style="padding:6px 10px;border-radius:6px;border:1px solid #d0d7e6;background:#fff;margin-right:8px">
+    Filters ▾
+  </button>
 </header>
+
+<!-- Hidden overlay for filters -->
+<div id="filterOverlay" class="overlay">
+  <div class="overlay-content">
+    <div class="controls">
+      <input type="search" id="searchInput" placeholder="Search product...">
+      <!-- rest of your controls -->
+      <label>Sort:
+        <select id="sortSelect">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+          <option value="needHigh">Need (High → Low)</option>
+          <option value="needLow">Need (Low → High)</option>
+        </select>
+      </label>
+      <label>Location:
+        <select id="filterLocation"><option value="">All</option></select>
+      </label>
+      <label>Shop:
+        <select id="filterShop"><option value="">All</option></select>
+      </label>
+      <button id="refreshBtn">Refresh now</button>
+      <label>Auto-refresh:
+        <select id="refreshSelect">
+          <option value="0">Off</option>
+          <option value="30000">30 s</option>
+          <option value="60000">60 s</option>
+          <option value="300000" selected>5 m</option>
+        </select>
+      </label>
+      <button id="closeOverlayBtn">Close ✕</button>
+    </div>
+  </div>
+</div>
 
 <main>
   <div id="output">Loading...</div>
@@ -162,6 +183,7 @@
 <script>
 const SHEET_ID = "1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ"; // <-- replace me
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
 let REFRESH_INTERVAL_MS = 1800000; // auto-refresh every 60s (change or set to 0 to disable
 let refreshTimer = null;
 
@@ -517,6 +539,25 @@ setRefreshInterval(REFRESH_INTERVAL_MS);
 
 // auto refresh if requested
 //if (REFRESH_INTERVAL_MS > 0) setInterval(fetchAndRender, REFRESH_INTERVAL_MS);
+// === Overlay toggle for filters (expand/collapse) ===
+document.addEventListener("DOMContentLoaded", () => {
+  const overlay = document.getElementById("filterOverlay");
+  const openBtn = document.getElementById("toggleControlsBtn");
+  const closeBtn = document.getElementById("closeOverlayBtn");
+
+  if (openBtn && overlay && closeBtn) {
+    openBtn.addEventListener("click", () => {
+      overlay.classList.add("show");
+      document.body.classList.add("noscroll");
+    });
+
+    closeBtn.addEventListener("click", () => {
+      overlay.classList.remove("show");
+      document.body.classList.remove("noscroll");
+    });
+  }
+});
+
 </script>
 
 </body>
