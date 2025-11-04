@@ -175,7 +175,14 @@ select, button, input[type="search"] {
 <body>
 <header>
   <h1>📦 Buy List</h1>
-  <button id="toggleFiltersBtn" class="filter-toggle">Filters ▾</button>
+
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <button id="toggleFiltersBtn" class="filter-toggle">Filters ▾</button>
+    <button id="openSheetBtn" class="filter-toggle"
+      onclick="window.open('https://docs.google.com/spreadsheets/d/1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ/edit', '_blank')">
+      📊 Update Sheet
+    </button>
+  </div>
 
   <div id="filterPanel" class="filter-panel">
     <label>
