@@ -102,7 +102,24 @@ select, button, input[type="search"] {
   display: flex;
   flex-direction: column;
 }
+  
+.card.bought {
+  opacity: 0.45;
+  position: relative;
+}
 
+.card.bought::after {
+  content: "✅ Bought";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #2ecc71;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 .media {
   width: 100%;
   height: 300px;
@@ -304,7 +321,13 @@ function buildCardHTML(item){
       <div class="meta-row"><div class="meta-item">Need: <span class="stars">${formatStars(need)}</span></div></div>
       ${notes?`<div class="notes">${escapeHtml(notes)}</div>`:""}
     </div>`;
-  html+=`<div class="footer"><div class="timestamp">${time||""}</div></div></article>`;
+  html+=`
+  <div class="footer">
+    <div class="timestamp">${time||""}</div>
+    <button class="boughtBtn">✅ Bought</button>
+  </div>
+  </article>`;
+
   return html;
 }
 
@@ -319,8 +342,7 @@ async function fetchAndRender(){
     RAW_ROWS=json.table.rows.map(r=>{
       const o={}; (r.c||[]).forEach((c,i)=>o[cols[i]]=c?c.v:""); return o;
     });
-    console.log("Columns:", cols); //debug
-    console.log("Sample row:", RAW_ROWS[0]);//debug
+    
     populateFilters(RAW_ROWS);
     renderCards(RAW_ROWS);
   }catch(e){
@@ -404,6 +426,43 @@ function renderCards(rows){
     prev&&prev.addEventListener("click",()=>show(cur=(cur-1+imgs.length)%imgs.length));
     next&&next.addEventListener("click",()=>show(cur=(cur+1)%imgs.length));
     imgs.forEach(img=>img.addEventListener("click",()=>window.open(img.src,"_blank")));
+  });
+
+  //call local track
+  applyBoughtState();
+  setupBoughtButtons();
+}
+
+// --- Local Bought Tracking ---
+function applyBoughtState() {
+  const bought = JSON.parse(localStorage.getItem("boughtItems") || "{}");
+  document.querySelectorAll(".card").forEach(card => {
+    const title = card.querySelector(".product-title")?.textContent.trim();
+    if (bought[title]) card.classList.add("bought");
+  });
+}
+
+function setupBoughtButtons() {
+  const bought = JSON.parse(localStorage.getItem("boughtItems") || "{}");
+
+  document.querySelectorAll(".card").forEach(card => {
+    const title = card.querySelector(".product-title")?.textContent.trim();
+    const btn = card.querySelector(".boughtBtn");
+
+    if (!btn) return;
+
+    // Set initial text
+    btn.textContent = bought[title] ? "↩️ Undo" : "✅ Bought";
+
+    btn.addEventListener("click", () => {
+      if (bought[title]) {
+        delete bought[title];
+      } else {
+        bought[title] = true;
+      }
+      localStorage.setItem("boughtItems", JSON.stringify(bought));
+      renderCards(RAW_ROWS);
+    });
   });
 }
 
