@@ -243,49 +243,35 @@ function formatStars(n){
 function parseDateForSort(s) {
   if (!s) return 0;
   s = String(s).trim();
-  s = s.replace(/\u3000/g, ' ').replace(/年|月/g, '/').replace(/日/g, ' ').trim();
 
-  let d = new Date(s);
-  if (!isNaN(d.getTime())) return d.getTime();
-
-  const re1 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(?:([上上午下午APMapm]{2,4})\s*)?(\d{1,2}):(\d{2})(?::(\d{2}))?/i;
-  const re2 = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*?(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([上上午下午APMapm]{2,4})?/i;
-
-  let m = s.match(re1) || s.match(re2);
+  // 1) Handle Google Sheets "Date(YYYY,MM,DD,HH,MM,SS)"
+  let m = s.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)/);
   if (m) {
-    const year = parseInt(m[1], 10);
-    const month = parseInt(m[2], 10) - 1;
-    const day = parseInt(m[3], 10);
-
-    const timeMatch = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-    let hh = 0, mm = 0, ss = 0;
-    if (timeMatch) {
-      hh = parseInt(timeMatch[1], 10);
-      mm = parseInt(timeMatch[2], 10);
-      ss = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
-    }
-
-    const mer = (s.match(/上午|下午|AM|PM|am|pm/i) || [null])[0];
-    if (mer && /下午|PM/i.test(mer)) {
-      if (hh < 12) hh += 12;
-    } else if (mer && /上午|AM/i.test(mer)) {
-      if (hh === 12) hh = 0;
-    }
-
-    const dateObj = new Date(year, month, day, hh, mm, ss);
-    if (!isNaN(dateObj.getTime())) return dateObj.getTime();
+    let [_, y, mo, d, h, mi, se] = m.map(Number);
+    return new Date(y, mo, d, h, mi, se).getTime();
   }
 
-  const match2 = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*?(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if (match2) {
-    const [ , y, mo, da, hh, mi, ss ] = match2.map(Number);
-    const dt = new Date(y, mo - 1, da, hh || 0, mi || 0, ss || 0);
-    if (!isNaN(dt.getTime())) return dt.getTime();
+  // 2) Try regular JS Date
+  let d = new Date(s);
+  if (!isNaN(d)) return d.getTime();
+
+  // 3) Try Chinese AM/PM format
+  const zh = /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/;
+  const z = s.match(zh);
+  if (z) {
+    let [_, y, mo, da, ampm, h, mi, se] = z;
+    mo = +mo - 1;
+    h = +h;
+    mi = +mi;
+    se = +se || 0;
+    if (ampm === "下午" && h < 12) h += 12;
+    if (ampm === "上午" && h === 12) h = 0;
+    return new Date(+y, mo, +da, h, mi, se).getTime();
   }
 
-  const parsed = Date.parse(s);
-  return isNaN(parsed) ? 0 : parsed;
+  return 0;
 }
+
 
 function buildCardHTML(item){
   const p=item["Product"]||"Unnamed";
