@@ -174,6 +174,17 @@ select, button, input[type="search"] {
   font-size: 0.85rem;
 }
 
+.hide-bought-toggle {
+  font-size: 0.9em;
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bought {
+  opacity: 0.4;
+}
+
 .timestamp {
   color: var(--muted);
 }
@@ -195,6 +206,14 @@ select, button, input[type="search"] {
 
   <div style="display: flex; gap: 8px; align-items: center;">
     <button id="toggleFiltersBtn" class="filter-toggle">Filters ▾</button>
+    <label class="hide-bought-toggle">
+      <input type="checkbox" id="hideBoughtCheckbox">
+      Hide Bought Items
+    </label>
+    <button id="AddNewItemBtn" class="filter-toggle"
+      onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSct9UpDgudjiYnvmQ1UwRXLi89u8keRA1oapIjPM25-LlGmcA/viewform', '_blank')">
+      Add New Item
+    </button>
     <button id="openSheetBtn" class="filter-toggle"
       onclick="window.open('https://docs.google.com/spreadsheets/d/1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ/edit', '_blank')">
       📊 Update Sheet
@@ -386,6 +405,7 @@ function renderCards(rows){
   const order=document.getElementById("sortSelect").value;
 
   const splitRE = /[,\.;\/\|\u3001]/;
+  
 
   let f = rows.filter(r => {
     const product = (r["Product"] || "").toLowerCase();
@@ -398,6 +418,12 @@ function renderCards(rows){
   
     return locMatch && shopMatch && searchMatch;
   });
+  const hideBought = document.getElementById("hideBoughtCheckbox")?.checked;
+  const bought = JSON.parse(localStorage.getItem("boughtItems") || "{}");
+  
+  if (hideBought) {
+    f = f.filter(r => !bought[(r["Product"] || "").trim().toLowerCase()]);
+  }
 
 
   f.sort((a,b)=>{
@@ -466,24 +492,35 @@ function setupBoughtButtons() {
   });
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-  const btn=document.getElementById("toggleFiltersBtn");
-  const panel=document.getElementById("filterPanel");
-  if(btn && panel){
-    btn.addEventListener("click",()=>{
-      const show=panel.classList.toggle("show");
-      btn.textContent=show?"Filters ▴":"Filters ▾";
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("toggleFiltersBtn");
+  const panel = document.getElementById("filterPanel");
+
+  if (btn && panel) {
+    btn.addEventListener("click", () => {
+      const show = panel.classList.toggle("show");
+      btn.textContent = show ? "Filters ▴" : "Filters ▾";
     });
   }
 
-  ["filterLocation","filterShop","sortSelect"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.addEventListener("change",()=>renderCards(RAW_ROWS));
+  // ✅ Hide Bought checkbox listener (placed correctly here)
+  const hideBox = document.getElementById("hideBoughtCheckbox");
+  if (hideBox) {
+    hideBox.addEventListener("change", () => {
+      renderCards(RAW_ROWS);
+    });
+  }
+
+  ["filterLocation","filterShop","sortSelect"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", () => renderCards(RAW_ROWS));
   });
-  const search=document.getElementById("searchInput");
-  if(search) search.addEventListener("input",()=>renderCards(RAW_ROWS));
-  const refresh=document.getElementById("refreshBtn");
-  if(refresh) refresh.addEventListener("click",()=>fetchAndRender());
+
+  const search = document.getElementById("searchInput");
+  if (search) search.addEventListener("input", ()=>renderCards(RAW_ROWS));
+
+  const refresh = document.getElementById("refreshBtn");
+  if (refresh) refresh.addEventListener("click", () => fetchAndRender());
 
   fetchAndRender();
   setRefreshInterval(REFRESH_INTERVAL_MS);
