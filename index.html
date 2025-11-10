@@ -361,9 +361,14 @@ async function fetchAndRender(){
     const txt=await r.text();
     const json=JSON.parse(txt.substring(txt.indexOf("{"),txt.lastIndexOf("}")+1));
     const cols=json.table.cols.map(c=>c.label);
-    RAW_ROWS=json.table.rows.map(r=>{
-      const o={}; (r.c||[]).forEach((c,i)=>o[cols[i]]=c?c.v:""); return o;
+    RAW_ROWS = json.table.rows.map(r => {
+      const o = {};
+      (r.c || []).forEach((c, i) => {
+        o[cols[i]] = c ? (c.f ?? c.v ?? "") : "";
+      });
+      return o;
     });
+
     
     populateFilters(RAW_ROWS);
     renderCards(RAW_ROWS);
