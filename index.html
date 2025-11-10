@@ -310,10 +310,15 @@ function buildCardHTML(item){
   const p=item["Product"]||"Unnamed";
   const imgs=parseImagesField(item["picture"]||item["Picture"]);
   const time=item["timestamp"]||item["時間戳記"];
-  const loc=item["Location"]||"-", shop=item["Shop"]||"-";
-  const need=item["必買"]||item["Need"], //num=item["件數"]||item["Number"];
+  const loc = item["Location"] || "-";
+  const shop = item["Shop"] || "-";
+  
+  const need = item["必買"] || item["Need"] || "";
   const num = item["Number"] || item["件數"] || "";
-  const notes=item["Notes"]||"", price=item["Price"]||item["參考價錢(港元/日元)"];
+  
+  const notes = item["Notes"] || "";
+  const price = item["Price"] || item["參考價錢(港元/日元)"] || "";
+
   let html=`<article class="card" data-ts="${parseDateForSort(time)}">`;
   html+=`<div class="media">`;
   if(imgs.length) imgs.forEach((u,i)=>html+=`<img src="${u}" style="display:${i===0?'block':'none'};">`);
