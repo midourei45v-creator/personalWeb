@@ -314,7 +314,7 @@ function buildCardHTML(item){
   const shop = item["Shop"] || "-";
   
   const need = item["必買"] || item["Need"] || "";
-  const num = item["Number"] || item["件數"] || "";
+  const num = (item["件數"] ?? item["Number"] ?? "").toString(); //this change
   
   const notes = item["Notes"] || "";
   const price = item["Price"] || item["參考價錢(港元/日元)"] || "";
