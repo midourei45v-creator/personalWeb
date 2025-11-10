@@ -214,10 +214,7 @@ select, button, input[type="search"] {
       onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSct9UpDgudjiYnvmQ1UwRXLi89u8keRA1oapIjPM25-LlGmcA/viewform', '_blank')">
       Add New Item
     </button>
-    <button id="openSheetBtn" class="filter-toggle"
-      onclick="window.open('https://docs.google.com/spreadsheets/d/1XuPRye8Rdk35hajUUqG3Ig5jFl4FmD_sDqECFK_ENBQ/edit', '_blank')">
-      📊 Update Sheet
-    </button>
+    
   </div>
 
   <div id="filterPanel" class="filter-panel">
@@ -314,7 +311,8 @@ function buildCardHTML(item){
   const imgs=parseImagesField(item["picture"]||item["Picture"]);
   const time=item["timestamp"]||item["時間戳記"];
   const loc=item["Location"]||"-", shop=item["Shop"]||"-";
-  const need=item["必買"]||item["Need"], num=item["件數"]||item["Number"];
+  const need=item["必買"]||item["Need"], //num=item["件數"]||item["Number"];
+  const num = item["Number"] || item["件數"] || "";
   const notes=item["Notes"]||"", price=item["Price"]||item["參考價錢(港元/日元)"];
   let html=`<article class="card" data-ts="${parseDateForSort(time)}">`;
   html+=`<div class="media">`;
